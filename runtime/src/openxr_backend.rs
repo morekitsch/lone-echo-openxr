@@ -90,6 +90,8 @@ pub struct Direct3DSession {
     pub color_extent: Option<(u32, u32)>,
     pub d3d12_queue: Option<windows::Win32::Graphics::Direct3D12::ID3D12CommandQueue>,
     pub d3d12_color_states: Option<crate::d3d12_states::ColorStates>,
+    /// Raw eye-space masks, cached until the runtime signals a change.
+    pub visibility_masks: [[Option<openxr::VisibilityMask>; 3]; 2],
 }
 
 #[cfg(windows)]
@@ -172,6 +174,7 @@ pub unsafe fn create_direct3d_session(
     requested.khr_d3d12_enable = !d3d11;
     requested.khr_d3d11_enable = d3d11;
     requested.fb_display_refresh_rate = extensions.fb_display_refresh_rate;
+    requested.khr_visibility_mask = extensions.khr_visibility_mask;
     // Required for translating LibOVR's current-time API to OpenXR's clock.
     // Current Wine/Proton OpenXR implementations expose this extension.
     requested.khr_win32_convert_performance_counter_time = true;
@@ -762,6 +765,7 @@ pub unsafe fn create_direct3d_session(
             .map_err(|error| error.to_string())?,
     ];
     Ok(Direct3DSession {
+        visibility_masks: std::array::from_fn(|_| std::array::from_fn(|_| None)),
         instance,
         system,
         session,
@@ -1077,9 +1081,34 @@ impl Direct3DSession {
                     }
                     _ => {}
                 }
+            } else if let openxr::Event::VisibilityMaskChangedKHR(changed) = event {
+                if changed.session() == self.session.as_raw()
+                    && changed.view_configuration_type() == openxr::ViewConfigurationType::PRIMARY_STEREO
+                    && changed.view_index() < 2
+                {
+                    self.visibility_masks[changed.view_index() as usize] = std::array::from_fn(|_| None);
+                }
             }
         }
         Ok(())
+    }
+
+    pub fn visibility_mask(&mut self, eye: usize, kind: usize) -> Result<&openxr::VisibilityMask, i32> {
+        use crate::visibility_mask::UNSUPPORTED;
+        let Some(extension) = self.instance.exts().khr_visibility_mask.as_ref() else { return Err(UNSUPPORTED); };
+        if eye >= 2 || kind >= 3 { return Err(crate::visibility_mask::INVALID); }
+        if self.visibility_masks[eye][kind].is_none() {
+            let mask_type = [openxr::VisibilityMaskTypeKHR::HIDDEN_TRIANGLE_MESH,
+                             openxr::VisibilityMaskTypeKHR::VISIBLE_TRIANGLE_MESH,
+                             openxr::VisibilityMaskTypeKHR::LINE_LOOP][kind];
+            let mask = crate::visibility_mask::fetch(|info| unsafe {
+                (extension.get_visibility_mask)(self.session.as_raw(),
+                    openxr::ViewConfigurationType::PRIMARY_STEREO, eye as u32, mask_type, info)
+            })?;
+            crate::capi::log_call(&format!("OpenXR visibility mask eye={eye} kind={kind} vertices={} indices={}", mask.vertices.len(), mask.indices.len()));
+            self.visibility_masks[eye][kind] = Some(mask);
+        }
+        self.visibility_masks[eye][kind].as_ref().ok_or(UNSUPPORTED)
     }
 
     pub fn create_color_swapchain(

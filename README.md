@@ -24,6 +24,10 @@ private logs or generated release binaries. Build a package using
 
 ## Current status
 
+The `feature/openxr-visibility-mask` branch adds optional native visibility masks
+and is awaiting headset testing. See [implementation and test notes](runtime/VISIBILITY_MASKS.md).
+The results below describe the existing preview, which has not been replaced.
+
 This is a preview, with testing on Quest 3:
 
 | Configuration | User test result |

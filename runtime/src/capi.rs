@@ -1809,20 +1809,45 @@ pub unsafe extern "system" fn ovr_GetTextureSwapChainBufferDX(
     OVR_SUCCESS
 }
 
-/// No visibility mesh is exposed by this bridge yet. Return a defined failure
-/// so callers can render their normal fallback instead of reading an unfilled
-/// mesh. These opaque pointers have the SDK's descriptor/buffer pointer ABI;
-/// neither input nor caller-owned mesh storage is accessed on unsupported calls.
+/// # Safety
+/// Descriptor/buffer must address their CAPI structures. Output arrays must
+/// have their declared capacities and must not overlap the structures/each other.
 #[unsafe(no_mangle)]
-pub extern "system" fn ovr_GetFovStencil(
-    _session: OvrSession,
-    _descriptor: *const core::ffi::c_void,
-    _mesh_buffer: *mut core::ffi::c_void,
+pub unsafe extern "system" fn ovr_GetFovStencil(
+    session: OvrSession,
+    descriptor: *const crate::abi::OvrFovStencilDesc,
+    mesh_buffer: *mut crate::abi::OvrFovStencilMeshBuffer,
 ) -> OvrResult {
-    log_call("ovr_GetFovStencil unsupported");
-    let mut info = OvrErrorInfo { result: -1009, error_string: [0; 512] };
-    for (dest, byte) in info.error_string.iter_mut().zip(b"FOV stencil meshes are not supported by this bridge") {
-        *dest = *byte as c_char;
+    let result = (|| {
+        if session != (&SESSION_TOKEN as *const u8).cast_mut().cast() { return -1002; }
+        if descriptor.is_null() || mesh_buffer.is_null() { return -1005; }
+        if std::env::var("LIBOVR_OPENXR_VISIBILITY_MASK").as_deref() == Ok("0") { return -1009; }
+        let desc = unsafe { descriptor.read_unaligned() };
+        if let Err(error) = crate::visibility_mask::validate_desc(&desc) { return error; }
+        #[cfg(windows)]
+        {
+            let Ok(mut slot) = XR_SESSION.lock() else { return -1009; };
+            let Some(session) = slot.as_mut() else { return -1009; };
+            let mesh = session.visibility_mask(desc.eye as usize, desc.stencil_type.min(2) as usize)
+                .and_then(|mask| crate::visibility_mask::convert(&desc, mask));
+            match mesh {
+                Ok(mesh) => unsafe { crate::visibility_mask::write_mesh(&mesh, mesh_buffer) },
+                Err(error) => error,
+            }
+        }
+        #[cfg(not(windows))]
+        { -1009 }
+    })();
+    log_call(&format!("ovr_GetFovStencil result={result}"));
+    if result == OVR_SUCCESS { return result; }
+    let message = match result {
+        -1002 => "FOV stencil request has no valid session",
+        -1005 => "Invalid FOV stencil descriptor or output buffer",
+        _ => "No usable OpenXR visibility mask for this FOV stencil request",
+    };
+    let mut info = OvrErrorInfo { result, error_string: [0; 512] };
+    for (dest, byte) in info.error_string.iter_mut().zip(message.bytes()) {
+        *dest = byte as c_char;
     }
     LAST_ERROR.set(info);
     info.result
@@ -1912,16 +1937,20 @@ mod tests {
 
     #[test]
     fn unsupported_stencil_returns_failure_without_touching_caller_storage() {
-        let descriptor = [0x5au8; 64];
+        let descriptor = crate::abi::OvrFovStencilDesc {
+            fov: OvrFovPort { left_tan: 1.0, right_tan: 1.0, up_tan: 1.0, down_tan: 1.0 },
+            ..Default::default()
+        };
         let mut mesh = [0xa5u8; 64];
-        let call: extern "system" fn(OvrSession, *const core::ffi::c_void, *mut core::ffi::c_void) -> OvrResult = ovr_GetFovStencil;
+        let call: unsafe extern "system" fn(OvrSession, *const crate::abi::OvrFovStencilDesc, *mut crate::abi::OvrFovStencilMeshBuffer) -> OvrResult = ovr_GetFovStencil;
+        let session = (&SESSION_TOKEN as *const u8).cast_mut().cast();
         for _ in 0..3 {
-            assert_eq!(call(core::ptr::null_mut(), descriptor.as_ptr().cast(), mesh.as_mut_ptr().cast()), -1009);
+            assert_eq!(unsafe { call(session, &descriptor, mesh.as_mut_ptr().cast()) }, -1009);
             assert_eq!(mesh, [0xa5; 64]);
-            assert_eq!(descriptor, [0x5a; 64]);
             assert_eq!(LAST_ERROR.get().result, -1009);
         }
-        assert_eq!(call(core::ptr::null_mut(), core::ptr::null(), core::ptr::null_mut()), -1009);
+        assert_eq!(unsafe { call(core::ptr::null_mut(), core::ptr::null(), core::ptr::null_mut()) }, -1002);
+        assert_eq!(unsafe { call(session, core::ptr::null(), core::ptr::null_mut()) }, -1005);
     }
 }
 

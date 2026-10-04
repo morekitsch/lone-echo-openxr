@@ -15,6 +15,7 @@ pub mod runtime;
 mod render_size;
 mod perf_stats;
 mod log_buffer;
+mod visibility_mask;
 #[cfg(any(windows, test))]
 mod tracking_origin;
 

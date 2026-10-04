@@ -62,7 +62,7 @@ for path in (INSTALLER/'icons').iterdir():
         entries['icons/'+path.name]=path
 for path in LICENSES.rglob('*'):
     if path.is_file():entries[path.relative_to(INSTALLER).as_posix()]=path
-for name in ['Cargo.toml','Cargo.lock','UPSTREAM.md','LICENSE-APACHE','NOTICE']:
+for name in ['Cargo.toml','Cargo.lock','UPSTREAM.md','VISIBILITY_MASKS.md','LICENSE-APACHE','NOTICE']:
     entries['source/runtime/'+name]=ROOT/'runtime'/name
 for folder in ['src','tests']:
     for path in (ROOT/'runtime'/folder).glob('*.rs'):

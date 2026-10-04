@@ -93,6 +93,28 @@ pub struct OvrVector2f {
     pub y: f32,
 }
 
+/// CAPI explicitly aligns this descriptor to pointer size (48 bytes on x64).
+#[repr(C, align(8))]
+#[derive(Clone, Copy, Debug, Default)]
+pub struct OvrFovStencilDesc {
+    pub stencil_type: i32,
+    pub stencil_flags: u32,
+    pub eye: OvrEyeType,
+    pub fov: OvrFovPort,
+    /// The SDK documents this field as ignored, treated as identity.
+    pub hmd_to_eye_rotation: OvrQuatf,
+}
+
+#[repr(C)]
+pub struct OvrFovStencilMeshBuffer {
+    pub alloc_vertex_count: i32,
+    pub used_vertex_count: i32,
+    pub vertex_buffer: *mut OvrVector2f,
+    pub alloc_index_count: i32,
+    pub used_index_count: i32,
+    pub index_buffer: *mut u16,
+}
+
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default)]
 pub struct OvrVector3f {
