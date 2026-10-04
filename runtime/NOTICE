@@ -1,0 +1,14 @@
+Lone Echo OpenXR compatibility runtime
+
+Derived from TesseractCat/libovr-openxr-rs:
+https://github.com/TesseractCat/libovr-openxr-rs
+Revision 49c48292510b771e68ba8a85b45c7b2c35c0654b
+Upstream declares MIT OR Apache-2.0 in Cargo.toml. This distribution uses the
+Apache-2.0 option. The upstream checkout did not include a NOTICE file.
+
+Local modifications add D3D11/legacy CAPI frame support, correct the public
+HMD ABI and controller masks, use OpenXR aim poses and native velocities,
+and supply local platform initialization responses and missing exports.
+
+Third-party dependencies retain their respective licenses. Their notices
+are provided in the release's licenses directory.

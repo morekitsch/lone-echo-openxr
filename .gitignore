@@ -1,0 +1,57 @@
+# Local game installations, experimental copies, and diagnostics.
+/originals/
+/working/
+/reports/
+/runtime/target/
+/installer/state/
+/installer/userdata/
+/installer/payload/
+/installer/licenses/
+/installer/windows-python/
+/installer/setup.exe
+/installer/windows-bundle.json
+/dist/
+__pycache__/
+*.py[cod]
+
+# Games belong in local installations, never in source control.
+/games/
+/installer/games/*
+!/installer/games/lone-echo/
+!/installer/games/lone-echo-2/
+/installer/games/lone-echo/*
+/installer/games/lone-echo-2/*
+!/installer/games/lone-echo/.gitkeep
+!/installer/games/lone-echo-2/.gitkeep
+
+# Private workspace notes, configuration and machine-specific launchers.
+/SESSION.md
+/lone-echo-ii-openxr.desktop
+/.agents/
+/.codex/
+/.aws/
+.env
+.env.*
+*.pem
+*.key
+
+# Generated binaries, captures and runtime data.
+**/target/
+*.exe
+*.dll
+*.so
+*.dylib
+*.pdb
+*.obj
+*.o
+*.a
+*.lib
+*.zip
+*.7z
+*.log
+*.rdc
+*.dmp
+*.cache
+libovr-openxr-hmd-cache.toml
+libovr-openxr.toml
+.DS_Store

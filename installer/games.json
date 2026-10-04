@@ -1,0 +1,74 @@
+{
+  "le1": {
+    "name": "Lone Echo I",
+    "folder": "lone-echo",
+    "bin": "bin/win7",
+    "exe": "LoneEcho.exe",
+    "renderer": "d3d11",
+    "patches": [
+      {
+        "file": "LoneEcho.exe",
+        "sha256": "cb8e2325843904332573d50e77099ff8a88025c878cd9d4e565e366655389e85",
+        "edits": [
+          [
+            10833928,
+            "7508",
+            "eb08"
+          ]
+        ]
+      },
+      {
+        "file": "pnsovr.dll",
+        "sha256": "e47367d22a16777e8b525e9f26cf179da8cc2d78285ed6cce5d31c7c058eee76",
+        "edits": [
+          [
+            35249,
+            "742a",
+            "eb2a"
+          ],
+          [
+            34167,
+            "c7842450020000ffffffffe8f9fcffff",
+            "c7842450020000000000004883c8ff90"
+          ]
+        ]
+      }
+    ]
+  },
+  "le2": {
+    "name": "Lone Echo II",
+    "folder": "lone-echo-2",
+    "bin": "bin/win10",
+    "exe": "loneecho2.exe",
+    "renderer": "d3d12",
+    "patches": [
+      {
+        "file": "loneecho2.exe",
+        "sha256": "132d973ac5125fb4e37da3fdf94fd022ad2f3aea1af4b5dfef6aa902d175218b",
+        "edits": [
+          [
+            18349313,
+            "85c07511",
+            "9090eb11"
+          ]
+        ]
+      },
+      {
+        "file": "pnsovr.dll",
+        "sha256": "cabecabc571f0624ed91b2d208309c568b13706ef6e547dc32d16e719ef240bc",
+        "edits": [
+          [
+            626154,
+            "7427",
+            "eb27"
+          ],
+          [
+            624675,
+            "c785c0050000ffffffffe8ae000000",
+            "c785c0050000000000004883c8ff90"
+          ]
+        ]
+      }
+    ]
+  }
+}

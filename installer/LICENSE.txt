@@ -1,0 +1,4 @@
+The installer scripts and local compatibility changes are provided under the
+Apache License, Version 2.0. See licenses/Apache-2.0.txt for the full terms.
+The runtime's upstream attribution is in source/runtime/NOTICE.
+Third-party components retain their own licenses in licenses/.
