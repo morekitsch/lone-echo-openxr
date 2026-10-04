@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build a game-free preview from an explicit allowlist. Never archive a game tree."""
+"""Build a game-free release from an explicit allowlist. Never archive a game tree."""
 from pathlib import Path
 import hashlib
 import json
@@ -41,7 +41,7 @@ llvm=Path(os.environ.get('LLVM_MINGW_DIR',ROOT/'working/llvm-mingw-20260922-ucrt
 shutil.copyfile(llvm/'LICENSE.TXT',LICENSES/'LLVM-MinGW-LICENSE.txt')
 
 entries={}
-for name in ['echo_setup.py','steam_shortcuts.py','games.json','setup.sh','setup.cmd','README.md','RELEASE_NOTES.md','LICENSE.txt']:
+for name in ['echo_setup.py','steam_shortcuts.py','games.json','setup.sh','setup.cmd','README.md','SETUP.md','RELEASE_NOTES.md','LICENSE.txt']:
     entries[name]=INSTALLER/name
 manifest=json.loads((INSTALLER/'payload/manifest.json').read_text())
 assert set(manifest)=={'LibOVRRT64_1.dll','LibOVRPlatform64_1.dll','openxr_loader.dll'}
@@ -74,8 +74,8 @@ entries['source/windows_launcher.c']=INSTALLER/'windows_launcher.c'
 entries['source/tests/test_installer.py']=ROOT/'tests/test_installer.py'
 
 out=ROOT/'dist';out.mkdir(exist_ok=True)
-archive=out/'lone-echo-openxr-0.1.0-preview.zip'
-prefix='lone-echo-openxr-0.1.0-preview/'
+archive=out/'lone-echo-openxr-0.1.0.zip'
+prefix='lone-echo-openxr-0.1.0/'
 with zipfile.ZipFile(archive,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=9) as z:
     for folder in ['games/lone-echo/','games/lone-echo-2/']:
         z.writestr(prefix+folder,b'')

@@ -32,8 +32,8 @@ def source_folder(game, meta):
 
 with tempfile.TemporaryDirectory(prefix='echo-release-test-') as td:
     temp=Path(td)
-    with zipfile.ZipFile(ROOT/'dist/lone-echo-openxr-0.1.0-preview.zip') as z:z.extractall(temp)
-    package=temp/'lone-echo-openxr-0.1.0-preview'
+    with zipfile.ZipFile(ROOT/'dist/lone-echo-openxr-0.1.0.zip') as z:z.extractall(temp)
+    package=temp/'lone-echo-openxr-0.1.0'
     sys.path.insert(0,str(package))
     spec=importlib.util.spec_from_file_location('extracted_setup',package/'echo_setup.py')
     setup=importlib.util.module_from_spec(spec);spec.loader.exec_module(setup)

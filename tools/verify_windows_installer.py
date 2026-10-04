@@ -18,8 +18,8 @@ env.update(PYTHONHOME=r'C:\missing-python',PYTHONPATH=r'C:\missing-modules')
 results=[]
 with tempfile.TemporaryDirectory(prefix='windows-package-check-',dir=ROOT/'working') as td:
     temp=Path(td)/'Installer with spaces Ω';temp.mkdir()
-    with zipfile.ZipFile(ROOT/'dist/lone-echo-openxr-0.1.0-preview.zip') as z:z.extractall(temp)
-    package=temp/'lone-echo-openxr-0.1.0-preview'
+    with zipfile.ZipFile(ROOT/'dist/lone-echo-openxr-0.1.0.zip') as z:z.extractall(temp)
+    package=temp/'lone-echo-openxr-0.1.0'
     executable=package/'setup.exe'
     def run(*args, input=None, expected=0):
         result=subprocess.run(['wine',str(executable),*args],env=env,cwd=temp,input=input,

@@ -1,4 +1,4 @@
-# 0.1.0 preview
+# 0.1.0
 
 OpenXR compatibility runtime and command-line installer for your own copies
 of Lone Echo I and Lone Echo II. Windows includes a private Python runtime;
@@ -35,6 +35,7 @@ Follow [the setup and game-copy instructions](README.md).
 | LE2, same stack, this shared runtime | VR output and gameplay working; user confirmed PC flicker is gone with diagnostics off after the FOV-stencil correction |
 | Native Windows, LE1, VDXR | User confirmed installer and game work after the D3D11 texture-view correction |
 | Native Windows, LE2, VDXR | Latest runtime confirmed looking good in gameplay; native hidden masks supplied for both eyes and all hidden-mask CAPI requests succeeded |
+| Linux, GE-Proton, SteamVR | Runtime selection is implemented; headset testing is pending |
 | Native Windows, SteamVR | Untested |
 | D3D11 texture views under Wine | Default and explicit HDR formats, array/MSAA resources, and ordinary-resource isolation tested without a headset |
 | D3D12 graphics under Wine | Default color views, D24S8 depth creation/clear, three frame handoffs and color pixel readback passed without a headset |

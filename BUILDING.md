@@ -1,4 +1,4 @@
-# Building the preview
+# Building from source
 
 The runtime is derived from libovr-openxr-rs revision `49c48292510b771e68ba8a85b45c7b2c35c0654b`.
 Changes are in `runtime/src`; all dependencies are pinned by `runtime/Cargo.lock`.

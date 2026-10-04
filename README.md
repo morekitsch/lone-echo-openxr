@@ -1,82 +1,53 @@
 # Lone Echo OpenXR
 
-An experimental OpenXR compatibility runtime and cross-platform installer for
-Lone Echo I and Lone Echo II. Use your own copies of the games.
+Play **Lone Echo** and **Lone Echo II** on Linux or Windows using OpenXR. You need your own copies of the games; no game files are included.
 
-The runtime translates LibOVR calls to OpenXR, using D3D11 for Lone Echo I and
-D3D12 for Lone Echo II. Linux runs the Windows games through GE-Proton;
-Windows uses the selected OpenXR runtime directly.
+## Why this exists
 
-## Install and play
+This project aims to keep the Lone Echo games playable beyond the life of their original, neglected VR platform. Development began on Linux, the developer’s primary system. Windows support was added to make the games accessible to more players and easier to keep playing in the years ahead.
 
-See the [installer and game-copy instructions](installer/README.md).
-Release packages include a command-line installer, original numbered icons,
-and empty folders for the games. Windows packages include a private Python
-runtime and `setup.exe`; Linux uses `setup.sh` with Python 3.10 or newer.
+## Getting started
 
-The installer creates game shortcuts and, on Linux, WiVRn discovery entries
-and optional Steam VR shortcuts. Uninstall restores backed-up binaries and
-removes owned shortcuts while preserving games, saves and Proton prefixes.
+1. Download the ZIP from the [latest release](https://github.com/morekitsch/lone-echo-openxr/releases/latest) and extract it somewhere you want to keep it.
+2. Copy the **complete contents of each game's installation folder** to the matching destination below.
 
-This source repository contains no game content, game executables, saves,
-private logs or generated release binaries. Build a package using
-[BUILDING.md](BUILDING.md). A Git checkout alone is not a ready-to-run installer.
+   | Game | Destination |
+   | --- | --- |
+   | Lone Echo | `games/lone-echo/` |
+   | Lone Echo II | `games/lone-echo-2/` |
 
-## Current status
+   The `_data` and `bin` folders should sit directly inside each destination folder. You can install either game or both.
 
-The refreshed preview includes optional native visibility masks. LE2's masks
-were exercised on Windows/VDXR with positive visual feedback; Linux/WiVRn
-correctly used the fallback when the runtime supplied empty masks. See
-[implementation and test notes](runtime/VISIBILITY_MASKS.md).
+3. Run the installer using the instructions below.
+4. Connect your headset, then launch the game using its new shortcut.
 
-This is a preview, with testing on Quest 3:
+### Windows
 
-| Configuration | User test result |
-| --- | --- |
-| Linux / WiVRn / LE1 | VR view, controllers, gameplay and PC picture working |
-| Linux / WiVRn / LE2 | VR gameplay working; PC picture confirmed stable with diagnostics off after the FOV-stencil correction |
-| Windows / VDXR / LE1 | VR gameplay working; PC flicker reported |
-| Windows / VDXR / LE2 | Latest runtime confirmed looking good in gameplay; hidden-area mask requests succeeded for both eyes |
-| SteamVR | Available as a runtime selection, not yet tested |
+- Use 64-bit Windows with either Virtual Desktop and VDXR or SteamVR.
+- Double-click **`setup.exe`**. Python is included.
+- Choose **Install a game** and follow the prompts.
+- Select `vdxr` for Virtual Desktop or `steamvr` for SteamVR.
+- Connect your headset through your chosen runtime.
+- Launch the game using its Desktop or Start menu shortcut.
 
-On the first launch without saved headset data, the generic startup field of
-view can appear narrow. The runtime saves the headset's actual field of view;
-relaunching corrected the reported LE1 view. This startup limitation still
-needs a code fix. Keep the generated headset cache when updating.
+### Linux
 
-FOV-stencil requests use native OpenXR masks when available and return a defined
-unsupported result otherwise. The previous placeholder left its return value
-dependent on logging. The Linux PC picture and latest Windows/VDXR LE2 visuals
-have positive user feedback. Earlier right-hand disk throws were also
-inconsistent; an improvement has not been confirmed. Online platform services
-are not implemented. See [release notes](installer/RELEASE_NOTES.md).
+- Install WiVRn or SteamVR, GE-Proton with OpenXR support, and Python 3.10 or newer.
+- Open a terminal in the extracted folder and run:
 
-## Source layout
+  ```sh
+  bash setup.sh
+  ```
 
-- `runtime/`: shared Rust LibOVR-to-OpenXR implementation and runtime tests.
-- `installer/`: installer, Windows launcher source, game-build checksums,
-  patch definitions, icons and user documentation.
-- `tools/`: build, packaging and validation tools.
-- `tests/`: installer and uninstall tests with temporary fixtures.
-- `compat/`: earlier C prototype adapters, retained for reference. The current
-  release uses the shared Rust runtime. `tools/prepare_le2.py` and
-  `tools/launch_le2.py` belong to that earlier prototype.
+- Choose **Install a game** and follow the prompts.
+- Select `wivrn` or `steamvr`.
+- Connect your headset through your chosen runtime.
+- Launch the game from your applications menu. WiVRn also lists the installed games.
 
-Run the tests that do not require games or a headset:
+## Updating or uninstalling
 
-```bash
-python3 -m unittest discover -s tests -v
-CARGO_HOME="$PWD/working/cargo" cargo +stable test --locked --manifest-path runtime/Cargo.toml
-```
+Use **Uninstall** in the setup menu before updating or removing the package. Keep `games` and, on Linux, `userdata` to preserve your games and saves.
 
-Graphics tests and checks against your own game files are described in
-[BUILDING.md](BUILDING.md). Generated payloads, dependencies, local game folders,
-installer state and diagnostic reports are excluded from Git.
+For other setup options and troubleshooting, see the [setup reference](installer/SETUP.md). See the [release notes](installer/RELEASE_NOTES.md) for known issues and testing status. To build from source, follow [BUILDING.md](BUILDING.md).
 
-## License and attribution
-
-Local installer code and compatibility changes use the
-[Apache License 2.0](LICENSE). The runtime derives from
-[TesseractCat/libovr-openxr-rs](https://github.com/TesseractCat/libovr-openxr-rs);
-see [upstream attribution](runtime/UPSTREAM.md) and [NOTICE](runtime/NOTICE).
-Third-party components retain their licenses, included when packaging releases.
+This project is based on [libovr-openxr-rs](https://github.com/TesseractCat/libovr-openxr-rs). [License](LICENSE) · [Attribution](runtime/UPSTREAM.md)
