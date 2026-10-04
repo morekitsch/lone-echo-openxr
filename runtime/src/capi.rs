@@ -1821,15 +1821,31 @@ pub unsafe extern "system" fn ovr_GetFovStencil(
     let result = (|| {
         if session != (&SESSION_TOKEN as *const u8).cast_mut().cast() { return -1002; }
         if descriptor.is_null() || mesh_buffer.is_null() { return -1005; }
-        if std::env::var("LIBOVR_OPENXR_VISIBILITY_MASK").as_deref() == Ok("0") { return -1009; }
+        if std::env::var("LIBOVR_OPENXR_VISIBILITY_MASK").as_deref() == Ok("0") {
+            log_call("ovr_GetFovStencil fallback: disabled by environment");
+            return -1009;
+        }
         let desc = unsafe { descriptor.read_unaligned() };
+        log_call(&format!("ovr_GetFovStencil request eye={} type={} flags={} fov={:?}", desc.eye, desc.stencil_type, desc.stencil_flags, desc.fov));
         if let Err(error) = crate::visibility_mask::validate_desc(&desc) { return error; }
         #[cfg(windows)]
         {
-            let Ok(mut slot) = XR_SESSION.lock() else { return -1009; };
-            let Some(session) = slot.as_mut() else { return -1009; };
+            let Ok(mut slot) = XR_SESSION.lock() else {
+                log_call("ovr_GetFovStencil fallback: session lock poisoned");
+                return -1009;
+            };
+            let Some(session) = slot.as_mut() else {
+                log_call("ovr_GetFovStencil fallback: graphics session not created");
+                return -1009;
+            };
             let mesh = session.visibility_mask(desc.eye as usize, desc.stencil_type.min(2) as usize)
-                .and_then(|mask| crate::visibility_mask::convert(&desc, mask));
+                .and_then(|mask| {
+                    let mesh = crate::visibility_mask::convert(&desc, mask);
+                    if let Err(error) = &mesh {
+                        log_call(&format!("ovr_GetFovStencil fallback: mask conversion result={error}"));
+                    }
+                    mesh
+                });
             match mesh {
                 Ok(mesh) => unsafe { crate::visibility_mask::write_mesh(&mesh, mesh_buffer) },
                 Err(error) => error,

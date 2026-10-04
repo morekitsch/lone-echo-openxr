@@ -67,7 +67,7 @@ for name in ['Cargo.toml','Cargo.lock','UPSTREAM.md','VISIBILITY_MASKS.md','LICE
 for folder in ['src','tests']:
     for path in (ROOT/'runtime'/folder).glob('*.rs'):
         entries['source/runtime/'+folder+'/'+path.name]=path
-for name in ['build_runtime.sh','assemble_payload.py','build_release.py','build_windows_installer.py','verify_release.py','verify_windows_installer.py']:
+for name in ['build_runtime.sh','assemble_payload.py','build_release.py','build_windows_installer.py','verify_release.py','verify_windows_installer.py','probe_openxr_extensions.c']:
     entries['source/tools/'+name]=ROOT/'tools'/name
 entries['source/BUILDING.md']=ROOT/'BUILDING.md'
 entries['source/windows_launcher.c']=INSTALLER/'windows_launcher.c'

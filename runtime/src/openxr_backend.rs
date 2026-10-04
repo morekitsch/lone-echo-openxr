@@ -175,6 +175,7 @@ pub unsafe fn create_direct3d_session(
     requested.khr_d3d11_enable = d3d11;
     requested.fb_display_refresh_rate = extensions.fb_display_refresh_rate;
     requested.khr_visibility_mask = extensions.khr_visibility_mask;
+    crate::capi::log_call(&format!("OpenXR XR_KHR_visibility_mask available={}", extensions.khr_visibility_mask));
     // Required for translating LibOVR's current-time API to OpenXR's clock.
     // Current Wine/Proton OpenXR implementations expose this extension.
     requested.khr_win32_convert_performance_counter_time = true;
@@ -1095,15 +1096,21 @@ impl Direct3DSession {
 
     pub fn visibility_mask(&mut self, eye: usize, kind: usize) -> Result<&openxr::VisibilityMask, i32> {
         use crate::visibility_mask::UNSUPPORTED;
-        let Some(extension) = self.instance.exts().khr_visibility_mask.as_ref() else { return Err(UNSUPPORTED); };
+        let Some(extension) = self.instance.exts().khr_visibility_mask.as_ref() else {
+            crate::capi::log_call("OpenXR visibility mask fallback: extension unavailable");
+            return Err(UNSUPPORTED);
+        };
         if eye >= 2 || kind >= 3 { return Err(crate::visibility_mask::INVALID); }
         if self.visibility_masks[eye][kind].is_none() {
             let mask_type = [openxr::VisibilityMaskTypeKHR::HIDDEN_TRIANGLE_MESH,
                              openxr::VisibilityMaskTypeKHR::VISIBLE_TRIANGLE_MESH,
                              openxr::VisibilityMaskTypeKHR::LINE_LOOP][kind];
-            let mask = crate::visibility_mask::fetch(|info| unsafe {
-                (extension.get_visibility_mask)(self.session.as_raw(),
-                    openxr::ViewConfigurationType::PRIMARY_STEREO, eye as u32, mask_type, info)
+            let mask = crate::visibility_mask::fetch(|info| {
+                let result = unsafe { (extension.get_visibility_mask)(self.session.as_raw(),
+                    openxr::ViewConfigurationType::PRIMARY_STEREO, eye as u32, mask_type, info) };
+                crate::capi::log_call(&format!("OpenXR visibility mask query eye={eye} kind={kind} result={result:?} vertex_capacity={} vertex_count={} index_capacity={} index_count={}",
+                    info.vertex_capacity_input, info.vertex_count_output, info.index_capacity_input, info.index_count_output));
+                result
             })?;
             crate::capi::log_call(&format!("OpenXR visibility mask eye={eye} kind={kind} vertices={} indices={}", mask.vertices.len(), mask.indices.len()));
             self.visibility_masks[eye][kind] = Some(mask);
