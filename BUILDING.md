@@ -29,6 +29,9 @@ but formatting and locking still affect timing. The normal logging modes
 remain disabled by default, or synchronous with `LIBOVR_OPENXR_LOG=1`.
 Do not combine buffered mode with the installer's `--diagnostics` flag, which
 selects synchronous logging.
+For stencil queries, use `LIBOVR_OPENXR_LOG=stencil`. It records only stencil
+diagnostics and startup/shutdown markers directly, retaining startup evidence
+through long gameplay runs. It does not measure rendering performance.
 Native Windows builds can use the standard MSVC Rust target, but that build path has not been tested here. The user confirmed this cross-compiled build works for LE1 on Windows with VDXR.
 
 The optional Windows graphics test is

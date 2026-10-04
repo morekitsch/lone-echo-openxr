@@ -1,8 +1,9 @@
 # FOV stencil support
 
-This branch implements `ovr_GetFovStencil` using `XR_KHR_visibility_mask` when
-the selected OpenXR runtime exposes it. It is pending headset validation;
-the working preview installation and release archive have not been replaced.
+The refreshed preview implements `ovr_GetFovStencil` using
+`XR_KHR_visibility_mask` when the selected OpenXR runtime exposes it. LE2
+headset tests confirmed hidden masks on Windows/VDXR and the empty-mask fallback
+on Linux/WiVRn. LE1 and other runtimes still need testing with this update.
 
 The feature can reduce shading outside the area visible through the headset
 lenses. The benefit depends on the runtime's masks and how the game uses them;

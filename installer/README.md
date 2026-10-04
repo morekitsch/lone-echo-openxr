@@ -3,7 +3,7 @@
 Play your own copies of Lone Echo and Lone Echo II through OpenXR.
 This package contains compatibility software and empty game folders. It contains no game content.
 
-**Validation:** Lone Echo I is confirmed working in a Quest 3 through Linux/WiVRn, including menu input after correcting legacy sensor-status reporting. Lone Echo II gameplay works in WiVRn, with PC output still black or flickering. The user confirmed the Windows installer and LE1 with VDXR work after the D3D11 texture-view correction. The user confirmed LE2 reaches gameplay on Windows/VDXR and the player-placement correction works. After the requested intro-blackout retest, the user reported that the latest render-resolution and performance-statistics build worked great on Windows/VDXR LE2. The latest Linux LE1 build has confirmed wide headset output and a correct PC picture on repeat launches. Windows PC flicker remains under investigation, and broader gameplay regression tests are still needed. SteamVR remains untested. See [release notes](RELEASE_NOTES.md) for the test status and known issues.
+**Validation:** Both games have working gameplay reports on Quest 3 through Linux/WiVRn and Windows/VDXR. LE2's latest runtime has positive visual feedback on both platforms: VDXR supplied working hidden-area masks, while WiVRn correctly used the fallback for empty masks. LE1 previously passed on both platforms but still needs a headset retest with this shared runtime update. SteamVR remains untested. See [release notes](RELEASE_NOTES.md) for test status and known issues.
 
 ## Requirements
 
@@ -81,6 +81,10 @@ game folder and runtime. For an external game folder, supply `--game-dir` again.
 Do not replace DLLs directly in an installed game: the launcher checks them
 against its installation record. Repeat for each game you want to update.
 
+If you manually installed a test DLL, restore the DLL you backed up before
+uninstalling. The uninstaller preserves changed files and reports them instead
+of deleting them. Keep `state` and its backups until uninstall succeeds.
+
 ## Launch and change runtime
 
 Use the installed shortcuts, or:
@@ -125,7 +129,7 @@ python echo_setup.py status le1
 
 - First launch starts with nominal field-of-view values. Once a session produces valid views, the shim writes `libovr-openxr-hmd-cache.toml` beside the executable. Restart after the first successful session if the image appears narrow. Delete this cache when changing headsets.
 - Controller aim poses and velocities come from standard OpenXR APIs. No WiVRn-specific motion API, smoothing, or asymmetric throw correction is used.
-- Lone Echo II's missing PC menu and flicker were corrected by returning a defined unsupported result for FOV-stencil requests. The user confirmed stable PC output on Linux/WiVRn with diagnostics off; Windows needs a retest. The installer does not force display or fullscreen changes. Lone Echo I's desktop view is confirmed working on Linux/WiVRn.
+- Lone Echo II's FOV-stencil calls now return valid native OpenXR masks or a defined unsupported result. The PC picture is confirmed stable on Linux/WiVRn, and the latest Windows/VDXR LE2 test looked good with working hidden-area masks. Performance gains have not been measured. The installer does not force display or fullscreen changes. Lone Echo I's desktop view is confirmed working on Linux/WiVRn; its previous Windows flicker needs a retest with this build.
 - Platform services are local substitutes for single-player initialization. Online services are not implemented.
 - This compatibility runtime still contains incomplete CAPI functions. A successful startup is not a claim that every game feature or OpenXR runtime is supported.
 

@@ -7,6 +7,10 @@ Follow [the setup and game-copy instructions](README.md).
 
 ## Included
 
+- Optional native OpenXR visibility masks, with validated geometry and a
+  defined fallback when no usable mask is available. VDXR supplied working
+  hidden-area meshes in the LE2 test; WiVRn supplied empty masks and used the
+  fallback. No performance gain has been measured.
 - Three runtime DLLs shared by both games, with D3D11 support for Lone Echo I
   and D3D12 support for Lone Echo II.
 - Linux installer with GE-Proton discovery, separate game prefixes, WiVRn
@@ -28,7 +32,7 @@ Follow [the setup and game-copy instructions](README.md).
 | LE2, same stack, earlier runtime | User confirmed gameplay; right-hand disk throwing remained inconsistent |
 | LE2, same stack, this shared runtime | VR output and gameplay working; user confirmed PC flicker is gone with diagnostics off after the FOV-stencil correction |
 | Native Windows, LE1, VDXR | User confirmed installer and game work after the D3D11 texture-view correction |
-| Native Windows, LE2, VDXR | User confirmed startup, gameplay and placement; reported the latest resolution/statistics build worked great after the requested intro-blackout retest |
+| Native Windows, LE2, VDXR | Latest runtime confirmed looking good in gameplay; native hidden masks supplied for both eyes and all hidden-mask CAPI requests succeeded |
 | Native Windows, SteamVR | Untested |
 | D3D11 texture views under Wine | Default and explicit HDR formats, array/MSAA resources, and ordinary-resource isolation tested without a headset |
 | D3D12 graphics under Wine | Default color views, D24S8 depth creation/clear, three frame handoffs and color pixel readback passed without a headset |
@@ -39,10 +43,10 @@ Follow [the setup and game-copy instructions](README.md).
 
 - LE2's FOV-stencil export had a void signature and left its return value
   dependent on logging. It could report success without providing a mesh.
-  The call now returns a defined unsupported result so the game can use its
-  fallback. The user confirmed stable PC output on Linux/WiVRn with diagnostics
-  disabled. Windows/VDXR needs a retest. No rendering delays or extra graphics
-  layers were added.
+  The call now returns validated native OpenXR geometry or a defined unsupported
+  result so the game can use its fallback. The user confirmed stable PC output
+  on Linux/WiVRn with diagnostics disabled and good visuals with the latest
+  runtime on Windows/VDXR. No rendering delays or extra graphics layers were added.
 
 - After the requested intro-blackout retest, the user reported that the latest
   Windows/VDXR LE2 build worked great. Exact blackout duration was not measured;
@@ -77,10 +81,14 @@ Follow [the setup and game-copy instructions](README.md).
 - A first launch without saved headset data can use a generic, narrow field
   of view. The runtime saves the real headset values; restarting corrected
   the reported LE1 square VR view. A first-launch fix remains outstanding.
-- Windows PC flicker was reported for LE1 and LE2. The shared FOV-stencil
-  correction has been confirmed for Linux LE2 only; Windows retests remain.
-- FOV-stencil meshes are not implemented. The bridge reports unsupported and
-  leaves the game to use its fallback.
+- LE1 previously showed PC flicker on Windows; a headset retest with this shared
+  runtime update remains. LE2's latest Windows/VDXR visual test was positive.
+- The visible-rectangle stencil request fell back on VDXR because its outline
+  failed conservative conversion checks; hidden-area masks worked. Empty masks
+  on WiVRn also use the normal game fallback.
+- Using the Meta Quest button to recenter left the LE2 menu facing sideways in
+  one Windows/VDXR test; positioning in gameplay was normal. The cause is
+  unconfirmed, and investigation was deferred. Tracking behavior is unchanged.
 - The earlier LE2 build's right-hand disk throws were inconsistent. The shared
   runtime uses native OpenXR velocities, but an improvement is not confirmed.
 - Other game builds are rejected by checksum before patching. The accepted

@@ -24,9 +24,10 @@ private logs or generated release binaries. Build a package using
 
 ## Current status
 
-The `feature/openxr-visibility-mask` branch adds optional native visibility masks
-and is awaiting headset testing. See [implementation and test notes](runtime/VISIBILITY_MASKS.md).
-The results below describe the existing preview, which has not been replaced.
+The refreshed preview includes optional native visibility masks. LE2's masks
+were exercised on Windows/VDXR with positive visual feedback; Linux/WiVRn
+correctly used the fallback when the runtime supplied empty masks. See
+[implementation and test notes](runtime/VISIBILITY_MASKS.md).
 
 This is a preview, with testing on Quest 3:
 
@@ -35,7 +36,7 @@ This is a preview, with testing on Quest 3:
 | Linux / WiVRn / LE1 | VR view, controllers, gameplay and PC picture working |
 | Linux / WiVRn / LE2 | VR gameplay working; PC picture confirmed stable with diagnostics off after the FOV-stencil correction |
 | Windows / VDXR / LE1 | VR gameplay working; PC flicker reported |
-| Windows / VDXR / LE2 | VR gameplay and placement working; updated intro sequence retest successful; PC flicker reported |
+| Windows / VDXR / LE2 | Latest runtime confirmed looking good in gameplay; hidden-area mask requests succeeded for both eyes |
 | SteamVR | Available as a runtime selection, not yet tested |
 
 On the first launch without saved headset data, the generic startup field of
@@ -43,10 +44,10 @@ view can appear narrow. The runtime saves the headset's actual field of view;
 relaunching corrected the reported LE1 view. This startup limitation still
 needs a code fix. Keep the generated headset cache when updating.
 
-LE2's FOV-stencil call now returns a defined unsupported result, allowing the
-game's fallback. The previous placeholder left its return value dependent on
-logging. The PC correction is confirmed on Linux/WiVRn; Windows needs a retest.
-Earlier right-hand disk throws were also
+FOV-stencil requests use native OpenXR masks when available and return a defined
+unsupported result otherwise. The previous placeholder left its return value
+dependent on logging. The Linux PC picture and latest Windows/VDXR LE2 visuals
+have positive user feedback. Earlier right-hand disk throws were also
 inconsistent; an improvement has not been confirmed. Online platform services
 are not implemented. See [release notes](installer/RELEASE_NOTES.md).
 
