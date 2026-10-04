@@ -1408,6 +1408,7 @@ impl Direct3DSession {
                     .map_err(|error| error.to_string())?;
                 self.color_image = Some(image);
                 if let Some(states) = &self.d3d12_color_states { states.acquire(image); }
+                crate::capi::log_call(&format!("OpenXR color acquired index={image}"));
             }
             self.frame_begun = true;
         }
@@ -1471,6 +1472,7 @@ impl Direct3DSession {
             if let (Some(states), Some(image)) = (&self.d3d12_color_states, self.color_image) {
                 states.release(image);
             }
+            crate::capi::log_call(&format!("OpenXR color releasing index={:?}", self.color_image));
             if let Some(swapchain) = self.color_swapchain.as_mut() {
                 swapchain
                     .release_image()

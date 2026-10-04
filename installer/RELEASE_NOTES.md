@@ -26,7 +26,7 @@ Follow [the setup and game-copy instructions](README.md).
 | --- | --- |
 | LE1, Linux, GE-Proton, WiVRn, Quest 3 | User confirmed current preview: wide VR view on repeat launches, menu input and correct desktop picture |
 | LE2, same stack, earlier runtime | User confirmed gameplay; right-hand disk throwing remained inconsistent |
-| LE2, same stack, this shared runtime | User reports normal VR output and gameplay; desktop output black or flickering |
+| LE2, same stack, this shared runtime | VR output and gameplay working; user confirmed PC flicker is gone with diagnostics off after the FOV-stencil correction |
 | Native Windows, LE1, VDXR | User confirmed installer and game work after the D3D11 texture-view correction |
 | Native Windows, LE2, VDXR | User confirmed startup, gameplay and placement; reported the latest resolution/statistics build worked great after the requested intro-blackout retest |
 | Native Windows, SteamVR | Untested |
@@ -36,6 +36,13 @@ Follow [the setup and game-copy instructions](README.md).
 | Installer and uninstaller on Linux | Extracted package tested with both supported binary builds; original files, saves and unrelated Steam entries preserved |
 
 ## Fixed
+
+- LE2's FOV-stencil export had a void signature and left its return value
+  dependent on logging. It could report success without providing a mesh.
+  The call now returns a defined unsupported result so the game can use its
+  fallback. The user confirmed stable PC output on Linux/WiVRn with diagnostics
+  disabled. Windows/VDXR needs a retest. No rendering delays or extra graphics
+  layers were added.
 
 - After the requested intro-blackout retest, the user reported that the latest
   Windows/VDXR LE2 build worked great. Exact blackout duration was not measured;
@@ -70,10 +77,10 @@ Follow [the setup and game-copy instructions](README.md).
 - A first launch without saved headset data can use a generic, narrow field
   of view. The runtime saves the real headset values; restarting corrected
   the reported LE1 square VR view. A first-launch fix remains outstanding.
-- LE2 PC output can be black or flickering while VR works. Windowed mode showed
-  background color without the menu and flickered after Start. Windows PC
-  flicker was also reported for LE1 and LE2. Desktop presentation remains
-  unresolved; available LE2 traces do not call Oculus mirror-texture APIs.
+- Windows PC flicker was reported for LE1 and LE2. The shared FOV-stencil
+  correction has been confirmed for Linux LE2 only; Windows retests remain.
+- FOV-stencil meshes are not implemented. The bridge reports unsupported and
+  leaves the game to use its fallback.
 - The earlier LE2 build's right-hand disk throws were inconsistent. The shared
   runtime uses native OpenXR velocities, but an improvement is not confirmed.
 - Other game builds are rejected by checksum before patching. The accepted

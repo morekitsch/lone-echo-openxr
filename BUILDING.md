@@ -20,6 +20,15 @@ When starting from a release archive, copy `source/runtime`, `source/tools`, and
 
 The game patches are guarded by complete original-file hashes in `installer/games.json`.
 Patch validation against a different game build must be done explicitly; do not remove the hash checks.
+
+For timing investigations, `LIBOVR_OPENXR_LOG=buffered` keeps up to 32 MiB of
+recent complete trace records in memory and writes them at `ovr_Shutdown`.
+Quit the game normally to save the trace; a crash can lose it. Overflow drops
+the oldest records and reports the count. This avoids per-call file writes,
+but formatting and locking still affect timing. The normal logging modes
+remain disabled by default, or synchronous with `LIBOVR_OPENXR_LOG=1`.
+Do not combine buffered mode with the installer's `--diagnostics` flag, which
+selects synchronous logging.
 Native Windows builds can use the standard MSVC Rust target, but that build path has not been tested here. The user confirmed this cross-compiled build works for LE1 on Windows with VDXR.
 
 The optional Windows graphics test is

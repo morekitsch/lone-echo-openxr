@@ -14,6 +14,7 @@ pub mod platform_exports;
 pub mod runtime;
 mod render_size;
 mod perf_stats;
+mod log_buffer;
 #[cfg(any(windows, test))]
 mod tracking_origin;
 

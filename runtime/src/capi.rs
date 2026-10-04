@@ -21,6 +21,8 @@ static CLIENT_MINOR_VERSION: AtomicU32 = AtomicU32::new(94);
 static INITIALIZED: AtomicBool = AtomicBool::new(false);
 static TRACKING_ORIGIN: AtomicI32 = AtomicI32::new(0); // LibOVR defaults to eye level.
 static LOGGING_ENABLED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+static BUFFERED_LOGGING: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+static LOG_BUFFER: std::sync::Mutex<Option<crate::log_buffer::LogBuffer>> = std::sync::Mutex::new(None);
 static LAST_LOGGED_TRACKING_STATUS: AtomicI32 = AtomicI32::new(-1);
 static XR_REFRESH_RATE_BITS: AtomicU32 = AtomicU32::new(90.0f32.to_bits());
 static XR_EYE_WIDTH: AtomicI32 = AtomicI32::new(1832);
@@ -338,11 +340,27 @@ pub(crate) fn log_call(name: &str) {
     }) {
         return;
     }
+    // Opt-in timing investigation: keep the most recent 32 MiB in memory and
+    // write only at normal shutdown. A crash can lose this trace. The mutex and
+    // formatting still cost time; this is lower overhead, not uninstrumented.
+    if *BUFFERED_LOGGING.get_or_init(|| {
+        std::env::var("LIBOVR_OPENXR_LOG").is_ok_and(|value| value == "buffered")
+    }) {
+        if let Ok(mut buffer) = LOG_BUFFER.lock() {
+            buffer.get_or_insert_with(|| crate::log_buffer::LogBuffer::new(32 * 1024 * 1024))
+                .push(format!("[{:.6} pid={} {:?}] {name}\n", monotonic_time_seconds(), std::process::id(), std::thread::current().id()));
+        }
+        return;
+    }
     // Keep each record intact when input and render threads log concurrently.
     // This clock is independent of XR session creation and reference spaces.
     static LOG_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
     let Ok(_guard) = LOG_LOCK.lock() else { return; };
     let line = format!("[{:.6} pid={} {:?}] {name}\n", monotonic_time_seconds(), std::process::id(), std::thread::current().id());
+    write_log(&line);
+}
+
+fn write_log(line: &str) {
     let temp = std::env::var_os("TEMP").unwrap_or_else(|| "C:\\windows\\temp".into());
     let temp_path = std::path::PathBuf::from(temp).join("libovr-openxr.log");
     // Always write adjacent to echovr.exe too. Wine's TEMP may be an
@@ -413,6 +431,9 @@ pub extern "system" fn ovr_Initialize(_params: *const OvrInitParams) -> OvrResul
 pub extern "system" fn ovr_Shutdown() {
     log_call("ovr_Shutdown");
     INITIALIZED.store(false, Ordering::Release);
+    if let Ok(mut buffer) = LOG_BUFFER.lock() {
+        if let Some(buffer) = buffer.as_mut() { write_log(&buffer.drain()); }
+    }
 }
 
 /// # Safety
@@ -833,6 +854,7 @@ pub extern "system" fn ovr_GetTextureSwapChainCurrentIndex(
         None => return -1005,
     };
     unsafe { *index = current };
+    log_call(&format!("ovr_GetTextureSwapChainCurrentIndex chain={_chain:p} index={current}"));
     OVR_SUCCESS
 }
 
@@ -850,6 +872,7 @@ pub extern "system" fn ovr_CommitTextureSwapChain(
         Ok(chain) => chain,
         Err(error) => return error,
     };
+    log_call(&format!("ovr_CommitTextureSwapChain chain={_chain:p} index={} openxr_color={}", chain.current_index, chain.openxr_color));
     // OpenXR selects the color image in ovr_WaitToBeginFrame. Advancing that
     // index here would make Echo render into a different image than the one
     // released to the compositor. The local depth chain still cycles here.
@@ -1786,6 +1809,25 @@ pub unsafe extern "system" fn ovr_GetTextureSwapChainBufferDX(
     OVR_SUCCESS
 }
 
+/// No visibility mesh is exposed by this bridge yet. Return a defined failure
+/// so callers can render their normal fallback instead of reading an unfilled
+/// mesh. These opaque pointers have the SDK's descriptor/buffer pointer ABI;
+/// neither input nor caller-owned mesh storage is accessed on unsupported calls.
+#[unsafe(no_mangle)]
+pub extern "system" fn ovr_GetFovStencil(
+    _session: OvrSession,
+    _descriptor: *const core::ffi::c_void,
+    _mesh_buffer: *mut core::ffi::c_void,
+) -> OvrResult {
+    log_call("ovr_GetFovStencil unsupported");
+    let mut info = OvrErrorInfo { result: -1009, error_string: [0; 512] };
+    for (dest, byte) in info.error_string.iter_mut().zip(b"FOV stencil meshes are not supported by this bridge") {
+        *dest = *byte as c_char;
+    }
+    LAST_ERROR.set(info);
+    info.result
+}
+
 macro_rules! unresolved_exports {
     ($($name:ident),* $(,)?) => {$(
         #[unsafe(no_mangle)]
@@ -1814,7 +1856,6 @@ unresolved_exports!(
     ovr_GetControllerVibrationState,
     ovr_GetDeviceExtensionsVk,
     ovr_GetExternalCameras,
-    ovr_GetFovStencil,
     ovr_GetHmdColorDesc,
     ovr_GetInstanceExtensionsVk,
     ovr_GetMirrorTextureBufferDX,
@@ -1867,6 +1908,20 @@ mod tests {
     fn version_is_c_string() {
         let text = std::ffi::CStr::from_bytes_with_nul(VERSION).expect("NUL terminated version");
         assert!(text.to_str().expect("utf-8 version").contains("OpenXR"));
+    }
+
+    #[test]
+    fn unsupported_stencil_returns_failure_without_touching_caller_storage() {
+        let descriptor = [0x5au8; 64];
+        let mut mesh = [0xa5u8; 64];
+        let call: extern "system" fn(OvrSession, *const core::ffi::c_void, *mut core::ffi::c_void) -> OvrResult = ovr_GetFovStencil;
+        for _ in 0..3 {
+            assert_eq!(call(core::ptr::null_mut(), descriptor.as_ptr().cast(), mesh.as_mut_ptr().cast()), -1009);
+            assert_eq!(mesh, [0xa5; 64]);
+            assert_eq!(descriptor, [0x5a; 64]);
+            assert_eq!(LAST_ERROR.get().result, -1009);
+        }
+        assert_eq!(call(core::ptr::null_mut(), core::ptr::null(), core::ptr::null_mut()), -1009);
     }
 }
 

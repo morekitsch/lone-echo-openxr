@@ -29,7 +29,7 @@ This is a preview, with testing on Quest 3:
 | Configuration | User test result |
 | --- | --- |
 | Linux / WiVRn / LE1 | VR view, controllers, gameplay and PC picture working |
-| Linux / WiVRn / LE2 | VR gameplay working; PC picture black or flickering |
+| Linux / WiVRn / LE2 | VR gameplay working; PC picture confirmed stable with diagnostics off after the FOV-stencil correction |
 | Windows / VDXR / LE1 | VR gameplay working; PC flicker reported |
 | Windows / VDXR / LE2 | VR gameplay and placement working; updated intro sequence retest successful; PC flicker reported |
 | SteamVR | Available as a runtime selection, not yet tested |
@@ -39,8 +39,10 @@ view can appear narrow. The runtime saves the headset's actual field of view;
 relaunching corrected the reported LE1 view. This startup limitation still
 needs a code fix. Keep the generated headset cache when updating.
 
-LE2 desktop presentation remains under investigation. Switching its PC window
-out of fullscreen did not fix it. Earlier right-hand disk throws were also
+LE2's FOV-stencil call now returns a defined unsupported result, allowing the
+game's fallback. The previous placeholder left its return value dependent on
+logging. The PC correction is confirmed on Linux/WiVRn; Windows needs a retest.
+Earlier right-hand disk throws were also
 inconsistent; an improvement has not been confirmed. Online platform services
 are not implemented. See [release notes](installer/RELEASE_NOTES.md).
 

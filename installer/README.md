@@ -125,7 +125,7 @@ python echo_setup.py status le1
 
 - First launch starts with nominal field-of-view values. Once a session produces valid views, the shim writes `libovr-openxr-hmd-cache.toml` beside the executable. Restart after the first successful session if the image appears narrow. Delete this cache when changing headsets.
 - Controller aim poses and velocities come from standard OpenXR APIs. No WiVRn-specific motion API, smoothing, or asymmetric throw correction is used.
-- Lone Echo II can show a blank desktop window while the headset works. The cause remains unresolved; the installer does not force display or fullscreen changes. Lone Echo I's desktop view is confirmed working on Linux/WiVRn, and the user confirmed the Windows/VDXR black-screen fix works.
+- Lone Echo II's missing PC menu and flicker were corrected by returning a defined unsupported result for FOV-stencil requests. The user confirmed stable PC output on Linux/WiVRn with diagnostics off; Windows needs a retest. The installer does not force display or fullscreen changes. Lone Echo I's desktop view is confirmed working on Linux/WiVRn.
 - Platform services are local substitutes for single-player initialization. Online services are not implemented.
 - This compatibility runtime still contains incomplete CAPI functions. A successful startup is not a claim that every game feature or OpenXR runtime is supported.
 
