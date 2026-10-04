@@ -36,7 +36,7 @@ line topology, inscribed rectangles, invalid inputs, bounded native queries,
 geometry/buffer/C API tests under Wine. Synthetic tests cannot establish that
 the runtime provides useful masks or that a game draws them correctly.
 
-### First Linux headset test (2026-10-04)
+### Linux headset tests (2026-10-04)
 
 LE2 ran and exited normally using GE-Proton11-7 and WiVRn 26.9. The user
 reported good overall visuals, possibly cleaner moving edges, and a possible
@@ -53,7 +53,22 @@ its [HMD implementation](https://github.com/WiVRn/WiVRn/blob/v26.9/server/driver
 and [headset client](https://github.com/WiVRn/WiVRn/blob/v26.9/client/scenes/stream.cpp)).
 Empty geometry is a plausible cause, but the first trace does not establish it.
 
-The next build logs extension availability, request eye/type/FOV, native query
+The subsequent focused trace confirmed the immediate cause: the extension was
+available and all three native queries returned `SUCCESS` with zero vertices
+and indices. LE2 requested hidden triangle meshes for both eyes and a visible
+rectangle for the left eye (queried as a native line loop). The bridge correctly
+returned unsupported for empty geometry. Loading a save and entering gameplay
+did not produce further stencil calls. The user quit normally; exit code was
+zero and the working DLL and installer hash were verified restored.
+
+This confirms correct fallback on the tested WiVRn setup, not successful mask
+rendering or a performance improvement. Why the runtime supplied empty masks
+remains unproven. A runtime that supplies nonempty geometry is still needed to
+validate the rendering path; do not assume Windows/VDXR supplies it without a
+trace. A repeated identical WiVRn run is unnecessary unless investigating the
+runtime's mask supply or a changed configuration.
+
+The diagnostics build logs extension availability, request eye/type/FOV, native query
 results and counts, and early fallback reasons. These messages use the existing
 opt-in logger. `LIBOVR_OPENXR_LOG=stencil` writes only stencil diagnostics and
 startup/shutdown markers directly to the log, so frame traffic cannot evict
