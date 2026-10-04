@@ -50,4 +50,9 @@ Use **Uninstall** in the setup menu before updating or removing the package. Kee
 
 For other setup options and troubleshooting, see the [setup reference](SETUP.md). See the [release notes](RELEASE_NOTES.md) for known issues and testing status. To build from source, follow the [build instructions](source/BUILDING.md).
 
+## Contributors
+
+- **[morekitsch](https://github.com/morekitsch)** — Project creator and maintainer.
+- **OpenAI Codex** — AI assistance with development, debugging, testing, and documentation.
+
 This project is based on [libovr-openxr-rs](https://github.com/TesseractCat/libovr-openxr-rs). [License](LICENSE.txt) · [Attribution](source/runtime/UPSTREAM.md)
