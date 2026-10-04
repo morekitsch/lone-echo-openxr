@@ -22,6 +22,7 @@ static INITIALIZED: AtomicBool = AtomicBool::new(false);
 static TRACKING_ORIGIN: AtomicI32 = AtomicI32::new(0); // LibOVR defaults to eye level.
 static LOGGING_ENABLED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
 static BUFFERED_LOGGING: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+static STENCIL_LOGGING: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
 static LOG_BUFFER: std::sync::Mutex<Option<crate::log_buffer::LogBuffer>> = std::sync::Mutex::new(None);
 static LAST_LOGGED_TRACKING_STATUS: AtomicI32 = AtomicI32::new(-1);
 static XR_REFRESH_RATE_BITS: AtomicU32 = AtomicU32::new(90.0f32.to_bits());
@@ -338,6 +339,19 @@ pub(crate) fn log_call(name: &str) {
     if !*LOGGING_ENABLED.get_or_init(|| {
         std::env::var_os("LIBOVR_OPENXR_LOG").is_some_and(|value| value != "0" && !value.is_empty())
     }) {
+        return;
+    }
+    // A stencil investigation needs startup queries, not per-frame traffic.
+    // Write these few records directly so long runs cannot evict them from the
+    // general buffered trace, and they remain available before normal shutdown.
+    if *STENCIL_LOGGING.get_or_init(|| {
+        std::env::var("LIBOVR_OPENXR_LOG").is_ok_and(|value| value == "stencil")
+    }) && !(name.starts_with("ovr_GetFovStencil")
+        || name.starts_with("OpenXR visibility mask")
+        || name.starts_with("OpenXR XR_KHR_visibility_mask")
+        || name == "ovr_Initialize"
+        || name == "ovr_Shutdown")
+    {
         return;
     }
     // Opt-in timing investigation: keep the most recent 32 MiB in memory and

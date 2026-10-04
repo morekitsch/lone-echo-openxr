@@ -55,7 +55,11 @@ Empty geometry is a plausible cause, but the first trace does not establish it.
 
 The next build logs extension availability, request eye/type/FOV, native query
 results and counts, and early fallback reasons. These messages use the existing
-opt-in logger. Rendering behavior is unchanged. Do not add a guessed headset
+opt-in logger. `LIBOVR_OPENXR_LOG=stencil` writes only stencil diagnostics and
+startup/shutdown markers directly to the log, so frame traffic cannot evict
+startup evidence. A second Linux run exited cleanly, but its general buffered
+trace discarded the startup queries; use the focused mode for the next test.
+Rendering behavior is unchanged. Do not add a guessed headset
 mask or change the user's runtime configuration to force a successful result.
 
 `tools/probe_openxr_extensions.c` is a standalone Linux/Windows extension
@@ -66,7 +70,7 @@ the program's output. Supply the same native runtime manifest as the game.
 
 For the next headset test:
 
-1. Start LE2 with buffered diagnostics. Confirm the trace reports native mask
+1. Start LE2 with `LIBOVR_OPENXR_LOG=stencil`. Confirm the trace reports native mask
    query result and counts. If the result is unsupported, resolve the logged
    reason before requesting a visual A/B test. If the runtime supplies an empty
    mask, the unsupported fallback is intentional and no geometry is invented.
