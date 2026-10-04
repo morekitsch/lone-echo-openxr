@@ -83,10 +83,11 @@ hidden-mask CAPI calls and a positive visual test on Windows/VDXR. Performance
 improvement has not been measured; the rectangle fallback remains in use.
 
 The user also reported that recentering left the menu to their side, while
-positioning in gameplay was normal. Track that as a separate unresolved
-observation: the stencil code does not change tracking poses, and the focused
-trace excludes recenter calls. Which recenter control was used still needs
-clarification before diagnosing or changing tracking behavior.
+positioning in gameplay was normal. The user clarified that they held the Meta
+Quest button to recenter, then chose to defer investigation because the issue
+was minor. The cause is unconfirmed: the stencil code does not change tracking
+poses, and the focused trace excludes recenter calls. No tracking behavior was
+changed.
 
 The diagnostics build logs extension availability, request eye/type/FOV, native query
 results and counts, and early fallback reasons. These messages use the existing
