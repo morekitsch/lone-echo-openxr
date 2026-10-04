@@ -272,9 +272,8 @@ struct SwapChainState {
 
 static SWAP_CHAINS: std::sync::Mutex<Vec<Box<SwapChainState>>> = std::sync::Mutex::new(Vec::new());
 
-// OpenXR session lifetime is process-wide, matching LibOVR's singleton HMD
-// session. The frame bridge will use this retained session rather than the old
-// create-and-destroy diagnostic probe.
+// One retained OpenXR session backs the LibOVR session. Release it explicitly
+// in ovr_Destroy/ovr_Shutdown, before process/DLL teardown starts.
 #[cfg(windows)]
 static XR_SESSION: std::sync::Mutex<Option<crate::openxr_backend::Direct3DSession>> =
     std::sync::Mutex::new(None);
@@ -445,8 +444,55 @@ pub extern "system" fn ovr_Initialize(_params: *const OvrInitParams) -> OvrResul
 pub extern "system" fn ovr_Shutdown() {
     log_call("ovr_Shutdown");
     INITIALIZED.store(false, Ordering::Release);
+    destroy_session_resources();
     if let Ok(mut buffer) = LOG_BUFFER.lock() {
         if let Some(buffer) = buffer.as_mut() { write_log(&buffer.drain()); }
+    }
+}
+
+/// Release session-owned resources while the game and graphics runtime are
+/// still alive. Rust statics are not dropped at process exit. Leaving this
+/// session in XR_SESSION deferred VDXR cleanup until DLL teardown.
+fn destroy_session_resources() {
+    // Remove stale CAPI handles first, without holding the chain lock across
+    // any driver/runtime calls. OpenXR owns color images; only our ordinary
+    // depth/fallback resources have COM references to release here.
+    let chains = {
+        let mut chains = SWAP_CHAINS.lock().unwrap_or_else(|e| e.into_inner());
+        core::mem::take(&mut *chains)
+    };
+    #[cfg(windows)]
+    {
+        // Serialize teardown with all frame/input access to the XR session.
+        let mut slot = XR_SESSION.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some(mut session) = slot.take() {
+            log_call("OpenXR session cleanup begin");
+            if let Err(error) = session.retire_color_swapchain() {
+                log_call(&format!("OpenXR cleanup retire swapchain failed: {error}"));
+            }
+            // openxr's reference-counted handles destroy spaces/swapchains
+            // before their session, then the instance. xrDestroySession is
+            // valid in any session state; no exit-event wait loop is needed.
+            drop(session);
+            log_call("OpenXR session cleanup complete");
+        }
+    }
+    for chain in chains { release_owned_textures(chain); }
+}
+
+fn release_owned_textures(chain: Box<SwapChainState>) {
+    if chain.openxr_color { return; }
+    for texture in chain.textures {
+        if texture != 0 {
+            let object = texture as *mut core::ffi::c_void;
+            // These references are acquired when registering a depth/fallback
+            // swapchain, and removed from the registry exactly once.
+            unsafe {
+                let vtable = *(object as *const *const *const core::ffi::c_void);
+                let release: Release = core::mem::transmute(*vtable.add(2));
+                release(object);
+            }
+        }
     }
 }
 
@@ -1228,8 +1274,11 @@ pub extern "system" fn ovr_SetBool(
 }
 
 #[unsafe(no_mangle)]
-pub extern "system" fn ovr_Destroy(_session: OvrSession) {
+pub extern "system" fn ovr_Destroy(session: OvrSession) {
     log_call("ovr_Destroy");
+    if session == (&SESSION_TOKEN as *const u8).cast_mut().cast() {
+        destroy_session_resources();
+    }
 }
 
 /// # Safety
@@ -1956,7 +2005,36 @@ mod tests {
             OVR_SUCCESS
         );
         assert!(!session.is_null());
+
+        // A game may destroy its session with some CAPI textures still live.
+        // Check actual COM ownership, stale handles and repeated teardown.
+        #[repr(C)]
+        struct FakeTexture { vtable: *const usize, releases: u32 }
+        unsafe extern "system" fn release(raw: *mut core::ffi::c_void) -> u32 {
+            unsafe { (*raw.cast::<FakeTexture>()).releases += 1; }
+            0
+        }
+        let vtable = [0, 0, release as *const () as usize];
+        let mut owned = FakeTexture { vtable: vtable.as_ptr(), releases: 0 };
+        let mut borrowed = FakeTexture { vtable: vtable.as_ptr(), releases: 0 };
+        let chain = register_swap_chain(vec![(&mut owned as *mut FakeTexture) as usize], false).unwrap();
+        register_swap_chain(vec![(&mut borrowed as *mut FakeTexture) as usize], true).unwrap();
+        ovr_Destroy(core::ptr::null_mut());
+        assert_eq!(owned.releases, 0);
+        ovr_Destroy(session);
+        assert_eq!(owned.releases, 1);
+        assert_eq!(borrowed.releases, 0, "OpenXR retains ownership of color images");
+        let mut count = -1;
+        assert!(unsafe { ovr_GetTextureSwapChainLength(session, chain, &mut count) } < 0);
+        unsafe { ovr_DestroyTextureSwapChain(session, chain); }
+        ovr_Destroy(session);
         ovr_Shutdown();
+        assert_eq!(owned.releases, 1, "teardown must not release stale resources twice");
+
+        // Shutdown also cleans up when the caller omitted ovr_Destroy.
+        register_swap_chain(vec![(&mut owned as *mut FakeTexture) as usize], false).unwrap();
+        ovr_Shutdown();
+        assert_eq!(owned.releases, 2);
     }
 
     #[test]
@@ -2154,16 +2232,8 @@ pub unsafe extern "system" fn ovr_DestroyTextureSwapChain(_session: OvrSession, 
                     if let Err(e) = session.retire_color_swapchain() { log_call(&format!("OpenXR retire swapchain failed: {e}")); }
                 }
             }
-        } else {
-            for texture in chain.textures {
-                if texture != 0 {
-                    let object = texture as *mut core::ffi::c_void;
-                    let vtable = unsafe { *(object as *const *const *const core::ffi::c_void) };
-                    let release: Release = unsafe { core::mem::transmute(*vtable.add(2)) };
-                    unsafe { release(object) };
-                }
-            }
         }
+        release_owned_textures(chain);
     }
 }
 

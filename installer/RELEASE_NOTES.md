@@ -7,6 +7,8 @@ Follow [the setup and game-copy instructions](README.md).
 
 ## Included
 
+- Explicit OpenXR session cleanup on quit. A Windows/VDXR LE2 test now exits
+  with code 0 after the previous shutdown access violation and error-report popup.
 - Optional native OpenXR visibility masks, with validated geometry and a
   defined fallback when no usable mask is available. VDXR supplied working
   hidden-area meshes in the LE2 test; WiVRn supplied empty masks and used the
@@ -75,6 +77,8 @@ Follow [the setup and game-copy instructions](README.md).
 
 ## Known issues
 
+- The shutdown cleanup change passed the Windows/VDXR LE2 quit test; Linux
+  headset testing and LE1 testing of this change are still pending.
 - Broader gameplay regression tests are still needed after the shared runtime
   updates. Linux LE1 wide headset output and PC picture were confirmed on
   repeat launches.

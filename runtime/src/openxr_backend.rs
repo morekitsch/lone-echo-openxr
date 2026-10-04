@@ -85,11 +85,13 @@ pub struct Direct3DSession {
     /// Avoid filesystem I/O on every frame after capturing valid real views.
     pub hmd_cache_written: bool,
     pub frame_begun: bool,
+    // Drop recorded GPU work before the swapchain images it refers to, even
+    // if retire_color_swapchain returns an error during device loss.
+    pub d3d12_color_states: Option<crate::d3d12_states::ColorStates>,
     pub color_swapchain: Option<openxr::Swapchain<Direct3D>>,
     pub color_image: Option<u32>,
     pub color_extent: Option<(u32, u32)>,
     pub d3d12_queue: Option<windows::Win32::Graphics::Direct3D12::ID3D12CommandQueue>,
-    pub d3d12_color_states: Option<crate::d3d12_states::ColorStates>,
     /// Raw eye-space masks, cached until the runtime signals a change.
     pub visibility_masks: [[Option<openxr::VisibilityMask>; 3]; 2],
 }
