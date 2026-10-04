@@ -63,10 +63,30 @@ zero and the working DLL and installer hash were verified restored.
 
 This confirms correct fallback on the tested WiVRn setup, not successful mask
 rendering or a performance improvement. Why the runtime supplied empty masks
-remains unproven. A runtime that supplies nonempty geometry is still needed to
-validate the rendering path; do not assume Windows/VDXR supplies it without a
-trace. A repeated identical WiVRn run is unnecessary unless investigating the
+remains unproven. The Windows test below separately exercised nonempty masks.
+A repeated identical WiVRn run is unnecessary unless investigating the
 runtime's mask supply or a changed configuration.
+
+### Windows/VDXR focused test (2026-10-04)
+
+VDXR supplied hidden meshes with 52 vertices and 156 indices per eye. Native
+count/fill queries succeeded, and LE2's four hidden-mask CAPI calls succeeded
+(two per eye). Follow-up requests reused cached native geometry. The left-eye
+visible outline contained 48 vertices and indices, but conversion to an
+inscribed rectangle returned unsupported. The trace identifies conversion as
+the rejection stage but does not record enough geometry to identify which
+validation condition failed.
+
+The trace ends with normal shutdown. The user reported that the test looked
+great and entered gameplay. This confirms native mask retrieval, successful
+hidden-mask CAPI calls and a positive visual test on Windows/VDXR. Performance
+improvement has not been measured; the rectangle fallback remains in use.
+
+The user also reported that recentering left the menu to their side, while
+positioning in gameplay was normal. Track that as a separate unresolved
+observation: the stencil code does not change tracking poses, and the focused
+trace excludes recenter calls. Which recenter control was used still needs
+clarification before diagnosing or changing tracking behavior.
 
 The diagnostics build logs extension availability, request eye/type/FOV, native query
 results and counts, and early fallback reasons. These messages use the existing
